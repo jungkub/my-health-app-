@@ -82,13 +82,13 @@ def create_bar_chart(category_scores):
         xaxis=dict(
             range=[0, 100],
             title="Score (%)",
-            tickfont=dict(family='Kanit', size=12, color='black'),
-            title_font=dict(family='Kanit', size=14, color='black'),
+            tickfont=dict(family='Prompt', size=12, color='black'),
+            title_font=dict(family='Prompt', size=14, color='black'),
             showgrid=True,
             gridcolor='#E0E0E0'
         ),
         yaxis=dict(
-            tickfont=dict(family='Kanit', size=16, color='black', weight='bold')
+            tickfont=dict(family='Prompt', size=16, color='black', weight='bold')
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
