@@ -37,7 +37,8 @@ def calculate_results(answers):
                 break
 
         item_detail = {
-            'topic': q.short_topic,  # Use Short Topic!
+            'topic': q.short_topic,
+            'category': q.category,  # Added Category!
             'score': score,
             'advice': advice
         }
@@ -102,34 +103,34 @@ def create_bar_chart(category_scores):
 def generate_summary(gaps):
     """
     Synthesize a nice, natural language summary using HTML for app compatibility.
+    Categorizes advice into Physical and Mental sections.
     """
     if not gaps:
         return "สุขภาพโดยรวมของคุณอยู่ในเกณฑ์ดีเยี่ยม! ไม่มีจุดที่ต้องกังวลเป็นพิเศษ รักษาความสมดุลนี้ไว้นะครับ"
 
-    topics = [item['topic'] for item in gaps]
+    # Split gaps by category
+    phys_gaps = [g for g in gaps if g['category'] == 'Physical']
+    mental_gaps = [g for g in gaps if g['category'] == 'Mental']
 
-    # 1. Opening
-    summary = "จากการวิเคราะห์ พบว่ามีบางจุดที่คุณอาจจะต้องหันมาดูแลใส่ใจเพิ่มขึ้นอีกนิดครับ "
+    summary = "จากการวิเคราะห์ พบว่ามีบางจุดที่คุณอาจจะต้องหันมาดูแลใส่ใจเพิ่มขึ้นอีกนิดครับ<br><br>"
 
-    # 2. Topic Listing (Natural Phrasing)
-    if len(topics) == 1:
-        summary += f"หลักๆ คือเรื่อง <b>{topics[0]}</b> ครับ "
-    elif len(topics) == 2:
-        summary += f"ได้แก่เรื่อง <b>{topics[0]}</b> และ <b>{topics[1]}</b> ครับ "
-    elif len(topics) >= 3:
-        summary += f"โดยเฉพาะเรื่อง <b>{topics[0]}</b>, <b>{topics[1]}</b> และ <b>{topics[2]}</b> "
-        if len(topics) > 3:
-            summary += f"รวมถึงประเด็นอื่นๆ ย่อยๆ อีกเล็กน้อย "
+    # --- Physical Section ---
+    if phys_gaps:
+        summary += "<b>💪 ด้านสุขภาพกาย:</b><br>"
+        seen_advice = set()
+        for item in phys_gaps:
+            if item['advice'] not in seen_advice:
+                summary += f"- {item['advice']}<br>"
+                seen_advice.add(item['advice'])
+        summary += "<br>"
 
-    summary += "<br><br><b>📌 คำแนะนำสำหรับคุณ:</b><br>"
-
-    # 3. Advice Synthesis (Combine related advice)
-    seen_advice = set()
-    count = 0
-    for item in gaps:
-        if item['advice'] not in seen_advice and count < 4:
-            summary += f"- {item['advice']}<br>"
-            seen_advice.add(item['advice'])
-            count += 1
+    # --- Mental Section ---
+    if mental_gaps:
+        summary += "<b>🧠 ด้านสุขภาพจิต:</b><br>"
+        seen_advice = set()
+        for item in mental_gaps:
+            if item['advice'] not in seen_advice:
+                summary += f"- {item['advice']}<br>"
+                seen_advice.add(item['advice'])
 
     return summary
