@@ -16,23 +16,33 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6 { color: #000000 !important; font-weight: 600; font-family: 'Prompt', sans-serif; }
     p, span, div, li, label, .stMarkdown { color: #000000 !important; font-family: 'Prompt', sans-serif; }
 
-    /* Responsive Container Logic */
-    /* On PC (Wide): Constrain width to 1000px for easier reading but not too narrow */
+    /* Responsive & Mobile-First CSS */
+
+    /* 1. Main Container Logic */
+    /* Mobile by default (or small screens) */
     .block-container {
-        max-width: 1000px !important;
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
-        margin: 0 auto;
+        padding-top: 2rem !important;
+        padding-bottom: 5rem !important;
+        max-width: 100% !important;
     }
 
-    /* Card Styles */
+    /* PC / Large Screens */
+    @media (min-width: 900px) {
+        .block-container {
+            max-width: 900px !important; /* Perfect 'Document' width */
+            padding-top: 4rem !important;
+            margin: 0 auto;
+        }
+    }
+
+    /* 2. Card Styles */
     .content-card { 
         background: white; 
-        padding: 2.5rem; 
-        border-radius: 20px; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+        padding: 2rem; 
+        border-radius: 24px; 
+        box-shadow: 0 8px 30px rgba(0,0,0,0.08); 
         margin-bottom: 2rem; 
-        text-align: center; /* Center content in cards by default */
+        text-align: center;
     }
 
     .strength-card { background-color: #E8F5E9; border-left: 5px solid #2E7D32; padding: 15px; border-radius: 10px; margin-bottom: 10px; text-align: left; }
@@ -50,28 +60,44 @@ st.markdown("""
         text-align: left;
     }
 
-    /* Button Styling */
-    /* Base Button Style (Applied to ALL buttons) */
+    /* 3. Chunky Buttons (Fixed Size Issue) */
     .stButton > button {
-        width: 100%; /* Full width buttons on mobile, looks good in columns too */
-        border-radius: 50px !important;
-        padding: 0.8rem 0 !important;
+        width: 100%;
+        border-radius: 16px !important; /* Slightly more square/modern */
+        padding: 1rem 1rem !important; /* CHUNKY Padding */
         font-family: 'Prompt', sans-serif !important;
-        font-size: 1.1rem !important;
+        font-size: 1.3rem !important; /* Larger Text */
+        font-weight: 500 !important;
+        letter-spacing: 0.5px;
+        transition: all 0.2s ease;
+    }
 
-        /* Default to "Secondary" Look (White with Green Border) if not Primary */
-        background-color: #FFFFFF !important;
-        color: #2E7D32 !important;
-        border: 2px solid #2E7D32 !important;
+    .stButton > button:active {
+        transform: scale(0.98);
     }
 
     /* Primary Button Override */
     .stButton > button[kind="primary"], 
     .stButton > button[data-testid="baseButton-primary"] {
-        background: linear-gradient(90deg, #2ECC71, #27AE60) !important;
+        background: linear-gradient(135deg, #2ECC71 0%, #27AE60 100%) !important;
         color: white !important; 
         border: None !important;
-        box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+        box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+    }
+
+    /* Secondary Button Override */
+    .stButton > button[kind="secondary"],
+    .stButton > button[data-testid="baseButton-secondary"],
+    .stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]) {
+        background-color: white !important;
+        color: #2E7D32 !important;
+        border: 2px solid #E0E0E0 !important; /* Softer border initially */
+    }
+
+    /* Hover Effects */
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
     }
 
     div[data-testid="stRadio"] label p { color: #000000 !important; font-size: 1.15rem; }
@@ -139,7 +165,6 @@ elif st.session_state.step == 'assessment':
 
     with c1:
         if q_idx > 0:
-            # FIX: Removed kind arg, using default button which our CSS styles as Secondary
             if st.button("⬅️ ย้อนกลับ"):
                 st.session_state.q_idx -= 1
                 st.rerun()
@@ -148,7 +173,6 @@ elif st.session_state.step == 'assessment':
 
     with c2:
         btn_text = "ดูผลลัพธ์ ✅" if q_idx == len(questions) - 1 else "ข้อถัดไป ➡️"
-        # Using type='primary' which matches our CSS override
         if st.button(btn_text, type="primary"):
             for i, c in enumerate(current_q.choices):
                 if c['text'] == choice:
