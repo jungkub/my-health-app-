@@ -19,26 +19,36 @@ st.markdown("""
     /* Responsive & Mobile-First CSS */
 
     /* 1. Main Container Logic */
-    /* Mobile by default (or small screens) */
+    /* Mobile by default */
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1.5rem !important;
         padding-bottom: 5rem !important;
         max-width: 100% !important;
+    }
+
+    /* Mobile Typography Adjustments */
+    @media (max-width: 600px) {
+        h1 { font-size: 1.5rem !important; line-height: 1.3 !important; }
+        h2 { font-size: 1.3rem !important; }
+        h3 { font-size: 1.1rem !important; }
+        p, .stMarkdown p { font-size: 0.95rem !important; }
+        .content-card { padding: 1.5rem !important; }
     }
 
     /* PC / Large Screens */
     @media (min-width: 900px) {
         .block-container {
-            max-width: 900px !important; /* Perfect 'Document' width */
+            max-width: 900px !important;
             padding-top: 4rem !important;
             margin: 0 auto;
         }
+        h1 { font-size: 2.2rem !important; }
     }
 
     /* 2. Card Styles */
     .content-card { 
         background: white; 
-        padding: 2rem; 
+        padding: 2.5rem; 
         border-radius: 24px; 
         box-shadow: 0 8px 30px rgba(0,0,0,0.08); 
         margin-bottom: 2rem; 
@@ -60,13 +70,13 @@ st.markdown("""
         text-align: left;
     }
 
-    /* 3. Chunky Buttons (Fixed Size Issue) */
+    /* 3. Chunky Buttons */
     .stButton > button {
         width: 100%;
-        border-radius: 16px !important; /* Slightly more square/modern */
-        padding: 1rem 1rem !important; /* CHUNKY Padding */
+        border-radius: 16px !important;
+        padding: 1rem 1rem !important;
         font-family: 'Prompt', sans-serif !important;
-        font-size: 1.3rem !important; /* Larger Text */
+        font-size: 1.3rem !important;
         font-weight: 500 !important;
         letter-spacing: 0.5px;
         transition: all 0.2s ease;
@@ -91,7 +101,7 @@ st.markdown("""
     .stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]) {
         background-color: white !important;
         color: #2E7D32 !important;
-        border: 2px solid #E0E0E0 !important; /* Softer border initially */
+        border: 2px solid #E0E0E0 !important; 
     }
 
     /* Hover Effects */
@@ -117,7 +127,7 @@ if st.session_state.step == 'landing':
     st.markdown("""
         <div class='content-card'>
             <h1>🌿 New Holistic Health Check</h1>
-            <p style='font-size:1.3rem; margin-top: 10px;'>
+            <p style='margin-top: 10px;'>
                 แบบประเมินสุขภาพกายและใจฉบับปรับปรุง (20 ข้อ)<br>
                 วิเคราะห์จุดแข็งและจุดที่ควรปรับปรุง
             </p>
@@ -143,8 +153,8 @@ elif st.session_state.step == 'assessment':
 
     st.markdown(f"""
         <div style='text-align: center; margin-bottom: 10px;'>
-            <h2 style='margin:0; font-size: 1.8rem;'>{icon} {current_q.category} Part</h2>
-            <p style='font-size: 1rem; color: #666;'>ข้อที่ {q_idx + 1}/{len(questions)}</p>
+            <h2 style='margin:0;'>{icon} {current_q.category} Part</h2>
+            <p style='color: #666;'>ข้อที่ {q_idx + 1}/{len(questions)}</p>
         </div>
     """, unsafe_allow_html=True)
     st.progress(progress)
@@ -192,10 +202,14 @@ elif st.session_state.step == 'results':
 
     results, strengths, gaps = calculate_results(st.session_state.answers)
 
-    # 1. Chart Section
+    # 1. Chart Section (LOCKED)
     st.markdown("<div class='content-card' style='padding: 1rem;'>", unsafe_allow_html=True)
     st.subheader("ระดับคะแนน (Scores)")
-    st.plotly_chart(create_bar_chart(results), use_container_width=True)
+
+    # Config to Lock Chart Interaction!
+    fig = create_bar_chart(results)
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'staticPlot': True})
+
     st.markdown("</div>", unsafe_allow_html=True)
 
     # 2. Recommendations
