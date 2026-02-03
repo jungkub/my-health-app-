@@ -1,90 +1,135 @@
 import plotly.graph_objects as go
-import pandas as pd
-from data import questions, profiles, default_profile
+from data import questions
 
-def calculate_scores(answers):
+
+def calculate_results(answers):
     """
     answers: dict of question_id -> selected_choice_index
-    Returns: dict of dimension scores (P, M, S, I)
+    Returns: dict containing totals, strengths, gaps
     """
-    raw_scores = {'P': 0, 'M': 0, 'S': 0, 'I': 0}
-    max_scores = {'P': 0, 'M': 0, 'S': 0, 'I': 0}
+    results = {
+        'Physical': {'score': 0, 'max': 0, 'details': []},
+        'Mental': {'score': 0, 'max': 0, 'details': []}
+    }
+
+    strengths = []
+    gaps = []
 
     for q in questions:
-        # User answer
         choice_idx = answers.get(q.id)
-        if choice_idx is not None:
-             selected_scores = q.choices[choice_idx]['scores']
-             for key in raw_scores:
-                 raw_scores[key] += selected_scores.get(key, 0)
-        
-        # Calculate max possible score for normalization (simplified per question max)
-        # Actually, let's just sum up the raw scores for now. 
-        # But to be precise, we want to normalize to 0-100 scale?
-        # Let's verify max possible per dimension.
-        # For this prototype, raw scores are fine to display relative balance.
-        # But let's check max potential to normalize if needed.
-        pass
+        if choice_idx is None:
+            continue
 
-    return raw_scores
+        choice = q.choices[choice_idx]
+        score = choice['score']
 
-def determine_profile(scores):
-    """
-    scores: dict of dimension scores
-    Returns: profile dict
-    """
-    # Normalize simply for profile check logic if needed, or use raw thresholds
-    # Let's assume the thresholds in data.py are based on raw totals approx.
-    # To be safe, let's normalize to 0-100 range estimate or relative.
-    
-    # Simple normalization: specific score / max possible roughly
-    # Let's just pass raw scores to the criteria functions in data.py and adjust thresholds there if needed.
-    # Or better, we define thresholds based on the max possible score of 15 questions * 10 points = 150?
-    # No, points define distribution.
-    
-    # Just iterate and find first match
-    for key, profile in profiles.items():
-        if profile['criteria'](scores):
-            return profile
-            
-    return default_profile
+        # Accumulate Category Score
+        results[q.category]['score'] += score
+        max_q_score = max(c['score'] for c in q.choices)
+        if max_q_score == 0: max_q_score = 1  # Prevent div by zero
+        results[q.category]['max'] += max_q_score
 
-def create_radar_chart(scores):
-    """
-    Creates a radar chart using Plotly
-    """
-    categories = ['Physical (กาย)', 'Mental (ใจ)', 'Social (สังคม)', 'Intellectual (ปัญญา)']
-    values = [scores.get('P', 0), scores.get('M', 0), scores.get('S', 0), scores.get('I', 0)]
-    
-    # Close the loop for radar chart
-    categories = [*categories, categories[0]]
-    values = [*values, values[0]]
+        # Logic for Advice/Gap/Strength
+        advice = ""
+        for score_range, text in q.advice_map.items():
+            if score in score_range:
+                advice = text
+                break
 
-    fig = go.Figure(
-        data=[
-            go.Scatterpolar(
-                r=values,
-                theta=categories,
-                fill='toself',
-                name='Your Health Balance',
-                line_color='#2E8B57',
-                fillcolor='rgba(46, 139, 87, 0.3)'
-            )
-        ]
-    )
+        item_detail = {
+            'topic': q.short_topic,  # Use Short Topic!
+            'score': score,
+            'advice': advice
+        }
+
+        if score <= 1:
+            gaps.append(item_detail)
+        else:
+            strengths.append(item_detail)
+
+    return results, strengths, gaps
+
+
+def create_bar_chart(category_scores):
+    """
+    Horizontal Bar Chart for Physical vs Mental scores (Easy to Read)
+    """
+    p_score = category_scores['Physical']['score']
+    p_max = category_scores['Physical']['max'] or 1
+    m_score = category_scores['Mental']['score']
+    m_max = category_scores['Mental']['max'] or 1
+
+    phys_pct = (p_score / p_max) * 100
+    ment_pct = (m_score / m_max) * 100
+
+    current_values = [phys_pct, ment_pct]
+    categories = ['Physical Health (กาย)', 'Mental Health (ใจ)']
+    colors = ['#2ECC71', '#3498DB']  # Green for Body, Blue for Mind
+
+    fig = go.Figure(go.Bar(
+        x=current_values,
+        y=categories,
+        orientation='h',
+        text=[f"{v:.1f}%" for v in current_values],
+        textposition='auto',
+        marker_color=colors,
+        marker_line_width=0,
+        opacity=0.9
+    ))
 
     fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, max(values) + 10]
-            )
+        xaxis=dict(
+            range=[0, 100],
+            title="Score (%)",
+            tickfont=dict(family='Kanit', size=12, color='black'),
+            title_font=dict(family='Kanit', size=14, color='black'),
+            showgrid=True,
+            gridcolor='#E0E0E0'
         ),
-        showlegend=False,
+        yaxis=dict(
+            tickfont=dict(family='Kanit', size=16, color='black', weight='bold')
+        ),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter, sans-serif", size=14, color="#4A4A4A"),
-        margin=dict(l=40, r=40, t=40, b=40)
+        margin=dict(l=20, r=20, t=30, b=30),
+        height=300,  # Compact height
+        showlegend=False
     )
-    
+
     return fig
+
+
+def generate_summary(gaps):
+    """
+    Synthesize a nice, natural language summary using HTML for app compatibility.
+    """
+    if not gaps:
+        return "สุขภาพโดยรวมของคุณอยู่ในเกณฑ์ดีเยี่ยม! ไม่มีจุดที่ต้องกังวลเป็นพิเศษ รักษาความสมดุลนี้ไว้นะครับ"
+
+    topics = [item['topic'] for item in gaps]
+
+    # 1. Opening
+    summary = "จากการวิเคราะห์ พบว่ามีบางจุดที่คุณอาจจะต้องหันมาดูแลใส่ใจเพิ่มขึ้นอีกนิดครับ "
+
+    # 2. Topic Listing (Natural Phrasing)
+    if len(topics) == 1:
+        summary += f"หลักๆ คือเรื่อง <b>{topics[0]}</b> ครับ "
+    elif len(topics) == 2:
+        summary += f"ได้แก่เรื่อง <b>{topics[0]}</b> และ <b>{topics[1]}</b> ครับ "
+    elif len(topics) >= 3:
+        summary += f"โดยเฉพาะเรื่อง <b>{topics[0]}</b>, <b>{topics[1]}</b> และ <b>{topics[2]}</b> "
+        if len(topics) > 3:
+            summary += f"รวมถึงประเด็นอื่นๆ ย่อยๆ อีกเล็กน้อย "
+
+    summary += "<br><br><b>📌 คำแนะนำสำหรับคุณ:</b><br>"
+
+    # 3. Advice Synthesis (Combine related advice)
+    seen_advice = set()
+    count = 0
+    for item in gaps:
+        if item['advice'] not in seen_advice and count < 4:
+            summary += f"- {item['advice']}<br>"
+            seen_advice.add(item['advice'])
+            count += 1
+
+    return summary
