@@ -107,13 +107,17 @@ def next_step():
         if st.session_state.q_idx < len(questions) - 1:
             st.session_state.q_idx += 1
         else:
-            st.session_state.step = 'leads'
+            st.session_state.step = 'results'
+    elif st.session_state.step == 'results':
+        st.session_state.step = 'leads'
     elif st.session_state.step == 'leads':
-        st.session_state.step = 'results'
+        st.session_state.step = 'final'
     st.rerun()
 
 def prev_step():
     if st.session_state.step == 'leads':
+        st.session_state.step = 'results'
+    elif st.session_state.step == 'results':
         st.session_state.step = 'assessment'
         st.session_state.q_idx = len(questions) - 1
     elif st.session_state.step == 'assessment':
@@ -161,32 +165,6 @@ elif st.session_state.step == 'info':
     with c2:
         if st.button("ถัดไป ➡️", type="primary"): next_step()
 
-elif st.session_state.step == 'leads':
-    st.markdown("<div class='content-card'>", unsafe_allow_html=True)
-    st.header("🎲 Board Game Onsite")
-    st.write("เรามี Board Game Onsite สำหรับสุขภาพองค์รวม สนใจเข้าร่วมไหม?")
-    
-    st.session_state.interest = st.radio(
-        "ความสนใจของคุณ:",
-        options=["สนใจ", "ไม่สนใจ"],
-        index=0 if st.session_state.interest == "สนใจ" else 1,
-        horizontal=True,
-        label_visibility="collapsed"
-    )
-    
-    if st.session_state.interest == "สนใจ":
-        st.session_state.email = st.text_input("โปรดกรอก email เพื่อรับข้อมูล ของงาน onsite board game:", value=st.session_state.email)
-    
-    st.divider()
-    st.session_state.consent = st.checkbox("อนุญาตให้บันทึกข้อมูลเพื่อนำไปปรับปรุงบริการ (แบบไม่ระบุตัวตน)", value=st.session_state.consent)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("⬅️ ย้อนกลับ"): prev_step()
-    with c2:
-        if st.button("ดูผลลัพธ์ ✅", type="primary"): next_step()
-
 elif st.session_state.step == 'assessment':
     q_idx = st.session_state.q_idx
     current_q = questions[q_idx]
@@ -214,7 +192,7 @@ elif st.session_state.step == 'assessment':
     with c1:
         if st.button("⬅️ ย้อนกลับ"): prev_step()
     with c2:
-        btn_txt = "ดูผลลัพธ์ ✅" if q_idx == len(questions)-1 else "ข้อถัดไป ➡️"
+        btn_txt = "คำนวณผลลัพธ์ 📊" if q_idx == len(questions)-1 else "ข้อถัดไป ➡️"
         if st.button(btn_txt, type="primary"): next_step()
 
 elif st.session_state.step == 'results':
@@ -227,20 +205,6 @@ elif st.session_state.step == 'results':
         height=st.session_state.height
     )
     
-    with st.spinner("กำลังบันทึกข้อมูลลงฐานข้อมูล..."):
-        success, msg = save_to_google_sheet(
-            st.session_state.weight, 
-            st.session_state.height, 
-            results, 
-            st.session_state.answers,
-            SHEET_URL,
-            consent=st.session_state.consent,
-            interest=st.session_state.interest,
-            email=st.session_state.email
-        )
-        if success: st.success(msg)
-        else: st.warning(msg)
-
     st.markdown("<div class='content-card' style='padding: 1.5rem;'>", unsafe_allow_html=True)
     st.subheader("ภาพรวมสุขภาพ (Score Overview)")
     fig = create_bar_chart(results)
@@ -261,7 +225,67 @@ elif st.session_state.step == 'results':
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<hr>", unsafe_allow_html=True)
+    st.divider()
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("⬅️ ย้อนกลับ"): prev_step()
+    with c2:
+        if st.button("ถัดไป (Board Game) ➡️", type="primary"): next_step()
+
+elif st.session_state.step == 'leads':
+    st.markdown("<div class='content-card'>", unsafe_allow_html=True)
+    st.header("🎲 Board Game Onsite")
+    st.write("เรามี Board Game Onsite สำหรับสุขภาพองค์รวม สนใจเข้าร่วมไหม?")
+    
+    st.session_state.interest = st.radio(
+        "ความสนใจของคุณ:",
+        options=["สนใจ", "ไม่สนใจ"],
+        index=0 if st.session_state.interest == "สนใจ" else 1,
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    
+    if st.session_state.interest == "สนใจ":
+        st.session_state.email = st.text_input("โปรดกรอก email เพื่อรับข้อมูล ของงาน onsite board game:", value=st.session_state.email)
+    
+    st.divider()
+    st.session_state.consent = st.checkbox("อนุญาตให้บันทึกข้อมูลเพื่อนำไปปรับปรุงบริการ (แบบไม่ระบุตัวตน)", value=st.session_state.consent)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("⬅️ ย้อนกลับ"): prev_step()
+    with c2:
+        if st.button("บันทึกและเสร็จสิ้น ✅", type="primary"): next_step()
+
+elif st.session_state.step == 'final':
+    st.balloons()
+    st.markdown("<div class='content-card'>", unsafe_allow_html=True)
+    st.header("🎉 ขอบคุณที่ร่วมประเมิน")
+    
+    results, strengths, gaps = calculate_results(
+        st.session_state.answers, 
+        weight=st.session_state.weight, 
+        height=st.session_state.height
+    )
+    
+    with st.spinner("กำลังบันทึกข้อมูล..."):
+        success, msg = save_to_google_sheet(
+            st.session_state.weight, 
+            st.session_state.height, 
+            results, 
+            st.session_state.answers,
+            SHEET_URL,
+            consent=st.session_state.consent,
+            interest=st.session_state.interest,
+            email=st.session_state.email
+        )
+        if success: st.success(msg)
+        else: st.warning(msg)
+
+    st.write("การประเมินเสร็จสมบูรณ์ คุณสามารถปิดหน้านี้ได้ทันที หรือกดปุ่มด้านล่างเพื่อเริ่มใหม่")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
     if st.button("🔄 ทำแบบประเมินใหม่", type="primary"):
         st.session_state.clear()
         st.rerun()
