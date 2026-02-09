@@ -95,6 +95,9 @@ if 'q_idx' not in st.session_state: st.session_state.q_idx = 0
 if 'answers' not in st.session_state: st.session_state.answers = {}
 if 'weight' not in st.session_state: st.session_state.weight = 60.0
 if 'height' not in st.session_state: st.session_state.height = 170.0
+if 'consent' not in st.session_state: st.session_state.consent = False
+if 'interest' not in st.session_state: st.session_state.interest = "ไม่แน่ใจ"
+if 'email' not in st.session_state: st.session_state.email = ""
 
 # --- 4. NAVIGATION LOGIC ---
 def next_step():
@@ -141,9 +144,22 @@ elif st.session_state.step == 'info':
     
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.weight = st.number_input("น้ำหนัก (kg)", value=st.session_state.weight, step=0.1)
+        st.session_state.weight = st.number_input("น้ำหนัก (kg)", value=float(st.session_state.weight), step=0.1)
     with col2:
-        st.session_state.height = st.number_input("ส่วนสูง (cm)", value=st.session_state.height, step=0.1)
+        st.session_state.height = st.number_input("ส่วนสูง (cm)", value=float(st.session_state.height), step=0.1)
+
+    st.divider()
+    st.session_state.consent = st.checkbox("อนุญาตให้บันทึกข้อมูลเพื่อนำไปปรับปรุงบริการ (แบบไม่ระบุตัวตน)", value=st.session_state.consent)
+    
+    st.session_state.interest = st.radio(
+        "คุณต้องการพัฒนาสุขภาพองค์รวม (Holistic Health) ของตัวเองหรือไม่?",
+        options=["ใช่", "ไม่แน่ใจ", "ไม่สนใจ"],
+        index=0 if st.session_state.interest == "ใช่" else 1 if st.session_state.interest == "ไม่แน่ใจ" else 2,
+        horizontal=True
+    )
+    
+    if st.session_state.interest == "ใช่":
+        st.session_state.email = st.text_input("กรุณาระบุ Email เพื่อรับข้อมูลข่าวสารการพัฒนาสุขภาพ:", value=st.session_state.email)
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -168,7 +184,7 @@ elif st.session_state.step == 'assessment':
 
     options = [c['text'] for c in current_q.choices]
     default_idx = st.session_state.answers.get(current_q.id, 0)
-    choice_str = st.radio("เลือกคำตอบที่คุณรู้สึกว่าตรงกับตัวเองมากที่สุด:", options, index=default_idx, key=f"radio_{current_q.id}")
+    choice_str = st.radio("เลือกคำตอบ:", options, index=default_idx, key=f"radio_{current_q.id}", label_visibility="collapsed")
     
     for i, c in enumerate(current_q.choices):
         if c['text'] == choice_str:
@@ -199,7 +215,10 @@ elif st.session_state.step == 'results':
             st.session_state.height, 
             results, 
             st.session_state.answers,
-            SHEET_URL
+            SHEET_URL,
+            consent=st.session_state.consent,
+            interest=st.session_state.interest,
+            email=st.session_state.email
         )
         if success: st.success(msg)
         else: st.warning(msg)
