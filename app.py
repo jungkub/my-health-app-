@@ -96,7 +96,7 @@ if 'answers' not in st.session_state: st.session_state.answers = {}
 if 'weight' not in st.session_state: st.session_state.weight = 60.0
 if 'height' not in st.session_state: st.session_state.height = 170.0
 if 'consent' not in st.session_state: st.session_state.consent = False
-if 'interest' not in st.session_state: st.session_state.interest = "ไม่แน่ใจ"
+if 'interest' not in st.session_state: st.session_state.interest = "สนใจ"
 if 'email' not in st.session_state: st.session_state.email = ""
 
 # --- 4. NAVIGATION LOGIC ---
@@ -107,11 +107,16 @@ def next_step():
         if st.session_state.q_idx < len(questions) - 1:
             st.session_state.q_idx += 1
         else:
-            st.session_state.step = 'results'
+            st.session_state.step = 'leads'
+    elif st.session_state.step == 'leads':
+        st.session_state.step = 'results'
     st.rerun()
 
 def prev_step():
-    if st.session_state.step == 'assessment':
+    if st.session_state.step == 'leads':
+        st.session_state.step = 'assessment'
+        st.session_state.q_idx = len(questions) - 1
+    elif st.session_state.step == 'assessment':
         if st.session_state.q_idx > 0:
             st.session_state.q_idx -= 1
         else:
@@ -147,19 +152,6 @@ elif st.session_state.step == 'info':
         st.session_state.weight = st.number_input("น้ำหนัก (kg)", value=float(st.session_state.weight), step=0.1)
     with col2:
         st.session_state.height = st.number_input("ส่วนสูง (cm)", value=float(st.session_state.height), step=0.1)
-
-    st.divider()
-    st.session_state.consent = st.checkbox("อนุญาตให้บันทึกข้อมูลเพื่อนำไปปรับปรุงบริการ (แบบไม่ระบุตัวตน)", value=st.session_state.consent)
-    
-    st.session_state.interest = st.radio(
-        "คุณต้องการพัฒนาสุขภาพองค์รวม (Holistic Health) ของตัวเองหรือไม่?",
-        options=["ใช่", "ไม่แน่ใจ", "ไม่สนใจ"],
-        index=0 if st.session_state.interest == "ใช่" else 1 if st.session_state.interest == "ไม่แน่ใจ" else 2,
-        horizontal=True
-    )
-    
-    if st.session_state.interest == "ใช่":
-        st.session_state.email = st.text_input("กรุณาระบุ Email เพื่อรับข้อมูลข่าวสารการพัฒนาสุขภาพ:", value=st.session_state.email)
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -168,6 +160,32 @@ elif st.session_state.step == 'info':
         if st.button("⬅️ ย้อนกลับ"): prev_step()
     with c2:
         if st.button("ถัดไป ➡️", type="primary"): next_step()
+
+elif st.session_state.step == 'leads':
+    st.markdown("<div class='content-card'>", unsafe_allow_html=True)
+    st.header("🎲 Board Game Onsite")
+    st.write("เรามี Board Game Onsite สำหรับสุขภาพองค์รวม สนใจเข้าร่วมไหม?")
+    
+    st.session_state.interest = st.radio(
+        "ความสนใจของคุณ:",
+        options=["สนใจ", "ไม่สนใจ"],
+        index=0 if st.session_state.interest == "สนใจ" else 1,
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    
+    if st.session_state.interest == "สนใจ":
+        st.session_state.email = st.text_input("โปรดกรอก email เพื่อรับข้อมูล ของงาน onsite board game:", value=st.session_state.email)
+    
+    st.divider()
+    st.session_state.consent = st.checkbox("อนุญาตให้บันทึกข้อมูลเพื่อนำไปปรับปรุงบริการ (แบบไม่ระบุตัวตน)", value=st.session_state.consent)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("⬅️ ย้อนกลับ"): prev_step()
+    with c2:
+        if st.button("ดูผลลัพธ์ ✅", type="primary"): next_step()
 
 elif st.session_state.step == 'assessment':
     q_idx = st.session_state.q_idx
