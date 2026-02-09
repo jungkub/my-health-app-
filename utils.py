@@ -3,6 +3,17 @@ from data import questions
 import datetime
 import pandas as pd
 
+def get_health_label(score, max_score):
+    """
+    Categorize health based on percentage.
+    """
+    if max_score <= 0: return "N/A"
+    pct = (score / max_score) * 100
+    if pct >= 80: return "ดีเยี่ยม (Excellent)"
+    elif pct >= 60: return "ดี (Good)"
+    elif pct >= 40: return "ปานกลาง (Fair)"
+    else: return "ควรปรับปรุง (Needs Improvement)"
+
 def calculate_bmi(weight, height):
     """
     Calculate BMI and return score, category label, and severity.
@@ -14,23 +25,21 @@ def calculate_bmi(weight, height):
     height_m = height / 100
     bmi = weight / (height_m ** 2)
     
-    # User's Logic:
-    # < 18.5 -> 1 Score | Improve
-    # 18.5 – 22.9 -> 3 Score | Excellent
-    # 23.0 – 24.9 -> 2 Score | Fairly Good
-    # 25.0 – 29.9 -> 1 Score | Improve
-    # >= 30.0 -> 0 Score | Highly Improve
-    
+    # Calculate Ideal Weight Range (BMI 18.5 - 22.9)
+    ideal_min = 18.5 * (height_m ** 2)
+    ideal_max = 22.9 * (height_m ** 2)
+    ideal_text = f" (น้ำหนักที่เหมาะสมสำหรับความสูงของคุณคือ {ideal_min:.1f} - {ideal_max:.1f} กก.)"
+
     if bmi < 18.5:
-        return 1, f"BMI {bmi:.1f}: น้ำหนักต่ำกว่าเกณฑ์ (Underweight)", 2, 3 
+        return 1, f"BMI {bmi:.1f}: น้ำหนักต่ำกว่าเกณฑ์ (Underweight){ideal_text}", 2, 3 
     elif 18.5 <= bmi <= 22.9:
         return 3, f"BMI {bmi:.1f}: น้ำหนักปกติ (Normal)", 1, 3 
     elif 23.0 <= bmi <= 24.9:
-        return 2, f"BMI {bmi:.1f}: น้ำหนักเกิน (Overweight)", 2, 3 
+        return 2, f"BMI {bmi:.1f}: น้ำหนักเกิน (Overweight){ideal_text}", 2, 3 
     elif 25.0 <= bmi <= 29.9:
-        return 1, f"BMI {bmi:.1f}: อ้วนระดับ 1 (Obese I)", 3, 3 
+        return 1, f"BMI {bmi:.1f}: อ้วนระดับ 1 (Obese I){ideal_text}", 3, 3 
     else:
-        return 0, f"BMI {bmi:.1f}: อ้วนระดับ 2 (Obese II)", 3, 3
+        return 0, f"BMI {bmi:.1f}: อ้วนระดับ 2 (Obese II){ideal_text}", 3, 3
 
 
 def calculate_results(answers, weight=None, height=None):
@@ -102,24 +111,35 @@ def calculate_results(answers, weight=None, height=None):
     return results, strengths, gaps
 
 
-def save_to_google_sheet(weight, height, results, answers, sheet_url):
+def save_to_google_sheet(weight, height, results, answers, sheet_url, consent=False, interest="", email=""):
     """
     Connect to Google Sheets and append a row.
-    Uses st.connection if available (Streamlit way).
     """
+    if not consent:
+        return False, "ไม่ได้บันทึกข้อมูล (เนื่องจากไม่ได้รับความยินยอม)"
+
     import streamlit as st
     try:
         from streamlit_gsheets import GSheetsConnection
         
+        # Calculate qualitative labels
+        phys_label = get_health_label(results['Physical']['score'], results['Physical']['max'])
+        ment_label = get_health_label(results['Mental']['score'], results['Mental']['max'])
+
         # Prepare Data
-        # Flatten answers for storage
-        ans_flat = {f"Q{k}": v for k, v in answers.items()}
+        # Format answers as 1-based selection (1, 2, 3, ...)
+        ans_flat = {f"Q{k}": v + 1 for k, v in answers.items()}
+        
         data = {
             'Timestamp': [datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+            'Email': [email],
+            'Interest': [interest],
             'Weight': [weight],
             'Height': [height],
-            'Physical_Score': [results['Physical']['score']],
-            'Mental_Score': [results['Mental']['score']]
+            'Physical_Score': [f"{results['Physical']['score']}/{results['Physical']['max']}"],
+            'Physical_Level': [phys_label],
+            'Mental_Score': [f"{results['Mental']['score']}/{results['Mental']['max']}"],
+            'Mental_Level': [ment_label]
         }
         data.update({k: [v] for k, v in ans_flat.items()})
         df_new = pd.DataFrame(data)
