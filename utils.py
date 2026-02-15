@@ -111,7 +111,7 @@ def calculate_results(answers, weight=None, height=None):
     return results, strengths, gaps
 
 
-def save_to_google_sheet(weight, height, results, answers, sheet_url, consent=False, interest="", email=""):
+def save_to_google_sheet(weight, height, age, results, answers, sheet_url, consent=False, interest="", email=""):
     """
     Connect to Google Sheets and append a row.
     """
@@ -136,6 +136,7 @@ def save_to_google_sheet(weight, height, results, answers, sheet_url, consent=Fa
             'Interest': [interest],
             'Weight': [weight],
             'Height': [height],
+            'Age': [age],
             'Physical_Score': [f"{results['Physical']['score']}/{results['Physical']['max']}"],
             'Physical_Level': [phys_label],
             'Mental_Score': [f"{results['Mental']['score']}/{results['Mental']['max']}"],
