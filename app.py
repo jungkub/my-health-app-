@@ -95,6 +95,7 @@ if 'q_idx' not in st.session_state: st.session_state.q_idx = 0
 if 'answers' not in st.session_state: st.session_state.answers = {}
 if 'weight' not in st.session_state: st.session_state.weight = 60.0
 if 'height' not in st.session_state: st.session_state.height = 170.0
+if 'age' not in st.session_state: st.session_state.age = 25
 if 'consent' not in st.session_state: st.session_state.consent = False
 if 'interest' not in st.session_state: st.session_state.interest = "สนใจ"
 if 'email' not in st.session_state: st.session_state.email = ""
@@ -151,11 +152,13 @@ elif st.session_state.step == 'info':
     st.header("📋 ข้อมูลพื้นฐาน")
     st.write("กรุณาระบุข้อมูลเพื่อใช้คำนวณดัชนีมวลกาย (BMI)")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.session_state.weight = st.number_input("น้ำหนัก (kg)", value=float(st.session_state.weight), step=0.1)
     with col2:
         st.session_state.height = st.number_input("ส่วนสูง (cm)", value=float(st.session_state.height), step=0.1)
+    with col3:
+        st.session_state.age = st.number_input("อายุ (ปี)", value=int(st.session_state.age), step=1, min_value=1, max_value=120)
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -272,7 +275,8 @@ elif st.session_state.step == 'final':
     with st.spinner("กำลังบันทึกข้อมูล..."):
         success, msg = save_to_google_sheet(
             st.session_state.weight, 
-            st.session_state.height, 
+            st.session_state.height,
+            st.session_state.age, 
             results, 
             st.session_state.answers,
             SHEET_URL,
