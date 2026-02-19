@@ -152,9 +152,9 @@ def save_to_google_sheet(weight, height, age, results, answers, sheet_url, conse
         if "connections" not in st.secrets or "gsheets" not in st.secrets["connections"]:
              return False, "ไม่พบการตั้งค่า [connections.gsheets] ใน Secrets (กรุณาดูคู่มือ GOOGLE_SHEETS_SETUP.md)"
         
-        # Read existing data
+        # Read existing data with ttl=0 to disable caching and avoid overwriting data
         try:
-            existing_data = conn.read(spreadsheet=sheet_url)
+            existing_data = conn.read(spreadsheet=sheet_url, ttl=0)
         except Exception as read_err:
             if "Public Spreadsheet cannot be written to" in str(read_err):
                  return False, "ยังไม่ได้ตั้งค่า Service Account หรือยังไม่ได้ Share Sheet ให้ Email ของ Service Account ครับ"
